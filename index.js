@@ -6,18 +6,30 @@ import admin from "firebase-admin";
 const app = express();
 app.use(bodyParser.json());
 
-const VERIFY_TOKEN = "mytoken";
-const ACCESS_TOKEN = "EAAc4EIWF2X0BRPfLHNvTyLxZCQFvjhftWYh8u9XjuphrYeMZB7cheNi5kpN1Y7josiOyv49TFTQ2vZCRJBqfLuAhZAFain0qCaGgwS50dD6D6eigPcrZABYmZBOMcNZADaqmjwcaR3wFAfPPZBOvoZCGZAIq5d7QTMEICtSuTPuFA08v9PXtXDzZCKn3mxoY3cxoQGonCZC5egAXmJPzI3UlyY3C5xY4ZBphb5qxWjkPPvB5aCQ9csTPlLy6lPk0WhDgBaiN6uCS6Me11ll7hwrGRXMrWqH6r";
-const PHONE_NUMBER_ID = "1067373776458883";
+// 🔐 ENV VARIABLES use karo (secure way)
+const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
+const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 
-// 🔥 Secure Firebase (Render ENV se)
-const serviceAccount = JSON.parse(process.env.FIREBASE_KEY);
+// 🔥 Firebase ENV se load
+let serviceAccount;
+
+try {
+  serviceAccount = JSON.parse(process.env.FIREBASE_KEY);
+} catch (e) {
+  console.error("❌ FIREBASE_KEY parse error:", e);
+}
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
 const db = admin.firestore();
+
+// ✅ Health check (important for Render)
+app.get("/", (req, res) => {
+  res.send("Bot is running ✅");
+});
 
 // 🔹 Webhook verify
 app.get("/webhook", (req, res) => {
@@ -26,9 +38,9 @@ app.get("/webhook", (req, res) => {
   const challenge = req.query["hub.challenge"];
 
   if (mode && token === VERIFY_TOKEN) {
-    res.status(200).send(challenge);
+    return res.status(200).send(challenge);
   } else {
-    res.sendStatus(403);
+    return res.sendStatus(403);
   }
 });
 
@@ -75,9 +87,11 @@ app.post("/webhook", async (req, res) => {
     res.sendStatus(200);
 
   } catch (error) {
-    console.log("Error:", error);
+    console.error("🔥 ERROR:", error);
     res.sendStatus(500);
   }
 });
 
-app.listen(3000, () => console.log("🚀 Bot running"));
+// 🔥 PORT fix (Render ke liye important)
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 Bot running on ${PORT}`));
